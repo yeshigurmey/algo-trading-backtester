@@ -2,10 +2,10 @@
 
 Same timing rules as the event-driven engine (decide at the close, fill at the
 next open), but it works on portfolio *weights* instead of cash and share
-counts. That makes it roughly two orders of magnitude faster, which matters
-when a parameter search runs hundreds of backtests, at the price of two
-approximations: it ignores whole-share rounding, and it charges costs as a
-flat fraction of the amount traded.
+counts. That makes it several times faster (see benchmarks/bench.py), which
+adds up when a parameter search runs hundreds of backtests, at the price of
+two approximations: it ignores whole-share rounding, and it charges costs as
+a flat fraction of the amount traded.
 
 The event-driven engine stays the source of truth. The test suite checks the
 two agree, so a bug in either one shows up as a disagreement.

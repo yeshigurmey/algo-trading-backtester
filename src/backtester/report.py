@@ -62,6 +62,11 @@ def _money(value: float, _pos=None) -> str:
     return f"${value:,.0f}"
 
 
+def _dates(series: pd.Series):
+    """Plain datetime64 array: every matplotlib version plots it without pandas converters."""
+    return series.index.to_numpy()
+
+
 def _style(ax) -> None:
     ax.set_facecolor(SURFACE)
     ax.grid(axis="y", color=GRID, linewidth=1)
@@ -74,7 +79,11 @@ def _style(ax) -> None:
 
 def _end_labels(ax, series: dict[str, tuple[pd.Series, str]]) -> None:
     """Dot and value at the end of each line, nudged apart if they would overlap."""
-    ends = sorted(((s.iloc[-1], s.index[-1], color) for s, color in series.values()), reverse=True)
+    ends = sorted(
+        ((s.iloc[-1], s.index[-1].to_datetime64(), color) for s, color in series.values()),
+        key=lambda end: end[0],
+        reverse=True,
+    )
     low, high = ax.get_ylim()
     crowded = len(ends) == 2 and abs(ends[0][0] - ends[1][0]) < 0.05 * (high - low)
     for rank, (value, when, color) in enumerate(ends):
@@ -142,8 +151,8 @@ def plot_report(
     }
     for label, (equity, color) in lines.items():
         ax_eq.plot(
-            equity.index,
-            equity,
+            _dates(equity),
+            equity.to_numpy(),
             color=color,
             linewidth=2,
             label=label,
@@ -156,15 +165,21 @@ def plot_report(
     ax_eq.legend(loc="upper left", frameon=False, fontsize=9, labelcolor=INK)
 
     dd, bench_dd = drawdown(result.equity), drawdown(benchmark.equity)
-    ax_dd.fill_between(dd.index, dd, 0, color=STRATEGY_COLOR, alpha=0.10, linewidth=0)
-    ax_dd.plot(dd.index, dd, color=STRATEGY_COLOR, linewidth=1.5)
-    ax_dd.plot(bench_dd.index, bench_dd, color=BENCHMARK_COLOR, linewidth=1.5)
+    ax_dd.fill_between(_dates(dd), dd.to_numpy(), 0, color=STRATEGY_COLOR, alpha=0.10, linewidth=0)
+    ax_dd.plot(_dates(dd), dd.to_numpy(), color=STRATEGY_COLOR, linewidth=1.5)
+    ax_dd.plot(_dates(bench_dd), bench_dd.to_numpy(), color=BENCHMARK_COLOR, linewidth=1.5)
     ax_dd.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
     ax_dd.set_title("Drawdown from previous peak", loc="left", fontsize=10, color=INK_SOFT)
 
     invested = 1.0 - result.cash / result.equity
     ax_ex.fill_between(
-        invested.index, invested, 0, step="post", color=STRATEGY_COLOR, alpha=0.35, linewidth=0
+        _dates(invested),
+        invested.to_numpy(),
+        0,
+        step="post",
+        color=STRATEGY_COLOR,
+        alpha=0.35,
+        linewidth=0,
     )
     ax_ex.set_ylim(0, 1.05)
     ax_ex.set_yticks([0, 1])
