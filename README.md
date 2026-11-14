@@ -42,32 +42,51 @@ Strategies: `sma` (moving-average crossover), `momentum` (trailing return),
 `meanrev` (Bollinger bands), `buyhold`. Run `backtester run --help` for the
 account and cost options.
 
-## Example output
+## Results: SPY, 2010 to 2024
 
-The output below is from `backtester run --synthetic 3 --strategy sma -p fast=20 -p slow=100`.
-**It is simulated random-walk data, shown to illustrate the report, not a
-market result.** On a random walk no strategy has a real edge, which is what
-the numbers show: the crossover lowers risk by sitting in cash 39% of the time,
-and gives up return in exchange.
+A 50/200-day moving-average crossover on SPY (S&P 500 ETF) against buy-and-hold,
+starting with $100,000 and paying 1 bp commission plus 2 bp slippage per trade:
 
-```
-                  SmaCrossover(fast=20, slow=100) Buy and hold
-final_equity                          $272,650.54  $339,228.17
-total_return                              172.65%      239.23%
-cagr                                       10.95%       13.48%
-volatility                                 13.84%       17.92%
-sharpe                                       0.79         0.77
-sortino                                      1.17         1.14
-max_drawdown                              -16.21%      -30.96%
-max_drawdown_days                             342          503
-calmar                                       0.68         0.44
-exposure                                   61.23%       99.96%
-round_trips                                    14            1
-win_rate                                   64.29%      100.00%
-costs_paid                              $1,550.42       $29.97
+```bash
+backtester run --ticker SPY --start 2010-01-01 --end 2025-01-01 \
+    --strategy sma -p fast=50 -p slow=200 --plot results/spy_sma.png
 ```
 
-![Example report: account value, drawdown and exposure](docs/example_report.png)
+```
+SPY: 3,774 trading days, 2010-01-04 to 2024-12-31
+                  SmaCrossover(fast=50, slow=200) Buy and hold
+final_equity                          $371,520.81  $681,178.28
+total_return                              271.52%      581.18%
+cagr                                        9.15%       13.66%
+volatility                                 13.72%       17.05%
+sharpe                                       0.71         0.84
+sortino                                      0.97         1.17
+max_drawdown                              -33.71%      -33.71%
+max_drawdown_days                             478          488
+calmar                                       0.27         0.41
+exposure                                   78.99%       99.97%
+round_trips                                     7            1
+win_rate                                   71.43%      100.00%
+costs_paid                                $648.89       $29.98
+```
+
+![SPY 50/200 crossover vs buy and hold: account value, drawdown and exposure](docs/spy_sma.png)
+
+**The crossover lost to buy-and-hold on every measure that matters here.** Three
+things explain it:
+
+- **It was out of the market 21% of the time during a long bull run.** Sitting
+  in cash while the index rose 581% meant missing part of that rise. Volatility
+  was lower (13.7% vs 17.1%), but return fell by more, so the Sharpe ratio
+  dropped from 0.84 to 0.71.
+- **It gave no protection in the worst fall.** Both columns show the same 33.71%
+  maximum drawdown. A 200-day average needs months to turn, and the 2020 crash
+  took weeks, so the strategy was still fully invested all the way down.
+- **Costs were not the reason.** Seven round trips cost $649 in total, a small
+  fraction of the $310,000 gap.
+
+Figures come from Yahoo Finance data as downloaded in November 2026; Yahoo
+revises adjusted prices over time, so a fresh download may differ slightly.
 
 ## How one simulated day works
 
